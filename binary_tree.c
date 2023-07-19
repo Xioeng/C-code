@@ -3,9 +3,10 @@
 #include<stdlib.h>
 #include<assert.h>
 
-/*Implementation of a binary tree which is built form data read form a .txt file
-the array size is given by the first element of the .txt file
-(In, Pre and Post)order walks are implemented and printed*/
+/* Implementation of a binary tree which is built from data read from a .txt file
+to an array that is subsequently converted into a binary tree.
+The array size is given by the first element of the .txt file
+(In, Pre, and Post)order walks are implemented and printed */
 
 // Reads and stores the file content stored at path_file into an array
 int* read_file_into_array(char path_file[]){
