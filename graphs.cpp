@@ -26,8 +26,8 @@ using namespace std;
 
 //Setting generator number, it returns a random float
 float generateRandomFloat(float min, float max) {
-    random_device rd;  // Seed the random number generator
-    default_random_engine generator(rd());
+    static random_device rd;  // Seed the random number generator static method allows having more randomness
+    static mt19937 generator(rd());
     uniform_real_distribution<float> distribution(min, max);
     return distribution(generator);
 }
@@ -86,7 +86,7 @@ vector<vector<float>> geneateRandomMatrix(int n_vertices, float density, float m
 ---------------------------------------------------Classes-------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------*/
 
-//Implement the graph class declared using and adjacency matrix and its basic operations. Also it has a vector storing the node values
+//Implements the graph class declared using and adjacency matrix and its basic operations. Also it has a vector storing the node values
 class Graph{
 private:
     vector<vector<float>> adjacency_matrix;
@@ -144,7 +144,7 @@ public:
     
     inline void addDeleteEdge(int u, int v){
         addSetEdgeValue(u, v, 0.0);}
-    
+    //For Dijkstra's algorithm
     void initializeNodes(int start){
         node_values = vector<float>( vertices(), INFINITY );
         node_values[start] = 0.0;}
