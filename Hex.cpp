@@ -5,7 +5,11 @@
 #include <string>
 #include <iomanip>
 #include <cmath>
+#include <tuple>
 using namespace std;
+
+//Symbols for players
+string player_1_symbol = "\u2716", player_2_symbol = "\u25CF", not_played = "\u2B21"; //(1)
 
 //Template for printing vectors
 template<typename T>
@@ -18,6 +22,7 @@ ostream& operator<<(ostream &os, vector<T>  & vec){
     cout<< endl;
     return os;
 }
+//Overloading * operator for strings
 string operator*(const int repetitionCount, const string& str) {
     string result;
     for (int i = 0; i < repetitionCount; ++i) {result += str;}
@@ -26,7 +31,7 @@ string operator*(const int repetitionCount, const string& str) {
 
 //Implements the graph class declared using and adjacency matrix and its basic operations. Also it has a vector storing the node values
 class Graph{
-private:
+protected:
     vector<vector<float>> adjacency_matrix;
     vector<float> node_values;
 
@@ -93,148 +98,260 @@ public:
         node_values[start] = 0.0;}
 };
 
-int nodeType(int node, int size){
-    int row = node/size, column = node % size;
+//HexBoard class, a subclass of Graph
+class HexBoard : public Graph{
+    private:
+        int size;
+        vector<bool> DFS_labels;
+    public:
+        HexBoard(int size): 
+            Graph(vector<vector<float>> (size * size, vector<float>(size * size, 0.0))), size(size), DFS_labels(vector<bool>( size * size , false)) {}
 
-    if (row == 0){
-        if (column == 0){return 0;}
-        else if (column == size - 1){return 2;}
-        else{return 1;}
-        }
+        inline void resetDFSLabels(){
+            DFS_labels = vector<bool>( size * size , false);}
 
-    if ( row == size - 1){
-        if (column == 0){return 6;}
-        else if (column == size - 1){return 4;}
-        else {return 5;}
-        }
-    
-    if (column == 0){return 7;}
-    else if(column ==  size - 1 ){return 3;}
-    else {return 8;}
-    }
+        void printHexBoard(){
+            int tab_num = 0;
+            printf("Printing hex board of size %d x %d:\n\n", size, size);
+            /*Board symbols, prints two types of line:
+            node_line: line with the nodes using characters in (1) preamble
+            edge_line: line with the links between nodes using characters in (2)
+            */
+            
+            string base_edge_line ="\\ / " , node_link = " — ", node_line = ""; //(2)
+            string edge_line =(string)" " + (size - 1) * base_edge_line + "\\";
 
-vector<string> node_assignations ={"top-right corner","top boundary", "top-left corner",
-                "left boundary", "bottom-left corner", "bottom boundary",
-                "bottom-right corner", "right boundary", "middle"};
-/*
-0 - top-right corner
-1 - top boundary    
-2 - top-left corner
-3 - left boundary
-4 - bottom-left corner
-5 - bottom boundary
-6 - bottom-right corner
-7 - right boundary
-8 - middle
-*/  
+            for (int node = 0; node < vertices(); node++ ){
+                if (getNodeValue(node) == 1.0){node_line += player_1_symbol;}//Player 1 played on that node
+                else if (getNodeValue(node) == 2.0){node_line += player_2_symbol;}//Player 2 played on that node
+                else {node_line += not_played;}//No one has played on that node
 
-Graph initializeHexBoard(int size){
-    int board_nodes = size*size, row, column;
-    Graph hex_board(vector<vector<float>> (board_nodes, vector<float>(board_nodes, 0.0)));
-    for (int node = 0; node < board_nodes; node++ ){
-        row = node/size, column = node % size;
-        switch (nodeType(node, size)){
-        case 0: //top-right corner
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            break;
-        case 1: //top boundary
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node + size - 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            break;
-        case 2://top-left corner
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            hex_board.addSetEdgeValue(node, node + size - 1);
-            break;
-        case 3: //left boundary
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node + size - 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            hex_board.addSetEdgeValue(node, node - size);
-            break;
-        case 4://bottom-left corner
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node - size);
-            break;
-        case 5: //bottom boundary
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node - size + 1);
-            hex_board.addSetEdgeValue(node, node - size);
-            break;
-        case 6://bottom-right corner
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node - size);
-            hex_board.addSetEdgeValue(node, node - size + 1);
-            break;
-        case 7: //right boundary
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node - size + 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            hex_board.addSetEdgeValue(node, node - size);
-            break;
-        case 8: //middle
-            hex_board.addSetEdgeValue(node, node - 1);
-            hex_board.addSetEdgeValue(node, node + 1);
-            hex_board.addSetEdgeValue(node, node + size);
-            hex_board.addSetEdgeValue(node, node - size);
-            hex_board.addSetEdgeValue(node, node - size + 1);
-            hex_board.addSetEdgeValue(node, node + size - 1);
-            break;  
-        default:
-            break;
-        }
-    }
-    return hex_board;
-}
-
-void printHexBoard(Graph hex_board){
-    int size = sqrt(hex_board.vertices()), tab_num = 0;
-    cout<< size<<endl;
-    assert(size*size == hex_board.vertices());
-    string player_1_symbol = "X", player_2_symbol = "O", not_played = "*";
-    string base_edge_line ="\\ / " , node_link = " - ", node_line = "";
-    string edge_line =(string)" " + (size - 1) * base_edge_line + "\\";
-
-    for (int node = 0; node < hex_board.vertices(); node++ ){
-        // node_line = tab_num*(string)" ";
-        if (hex_board.getNodeValue(node) == 1.0){node_line += player_1_symbol;}
-        else if (hex_board.getNodeValue(node) == 2.0){node_line += player_2_symbol;}
-        else {node_line += not_played;}
-
-        if ( (node % size) == size - 1){
-            //Print lines
-            cout<<node_line<<endl;
-            if (node/size == size-1){break;}
-            cout<<edge_line<<endl;
-            //Re-initialization
-            edge_line = (2)*(string)" " + edge_line;
-            tab_num++;
-            node_line = 2*tab_num*(string)" ";
+                if ( (node % size) == size - 1){
+                    //Print lines
+                    cout<<node_line<<endl;
+                    if (node/size == size-1){break;} //It has printed the last line, no edge line is necessary
+                    cout<<edge_line<<endl;
+                    //Lines re-initialization (blank node line, double tabbed edge_line)
+                    edge_line = 2*(string)" " + edge_line;
+                    node_line = 2*(++tab_num)*(string)" ";
+                    }
+                else{node_line +=node_link;}
             }
-        else{node_line +=node_link;}
-    
-        
-    }
-}
+            cout<<endl;
+        }
 
+        vector<int> neighborsColor(int u, float color){
+            assert(u < vertices() && (color == 1.0 || color == 2.0));
+            vector<int> neighbors_vector;
+            for (int j = 0; j < vertices(); j++){
+                // cout<<j<< "  "<<getNodeValue(j)<<"  "<<(getNodeValue(j) == color)<<"  "<<adjacency_matrix[u][j]<<endl;
+                if (adjacency_matrix[u][j]>0.0 && getNodeValue(j) == color){
+                    neighbors_vector.push_back(j);
+                }
+            }
+            return neighbors_vector;
+        }
 
+        /*Classifies each node (hexagon) in a Hex board according to its location
+        The list is for printing purposes:
+        0 - top-right corner = node_assignations[0] char array defined just before the main function
+        1 - top boundary    
+        2 - top-left corner
+        3 - left boundary
+        4 - bottom-left corner
+        5 - bottom boundary
+        6 - bottom-right corner
+        7 - right boundary
+        8 - middle = node_assignations[8]
+        */  
+        int nodeType(int node){
+            int row = node/size, column = node % size;
 
+            if (row == 0){
+                if (column == 0){return 0;}
+                else if (column == size - 1){return 2;}
+                else{return 1;}
+                }
+
+            if ( row == size - 1){
+                if (column == 0){return 6;}
+                else if (column == size - 1){return 4;}
+                else {return 5;}
+                }
+            
+            if (column == 0){return 7;}
+            else if(column ==  size - 1 ){return 3;}
+            else {return 8;}
+            }
+
+        void initializeHexBoard(){
+            int board_nodes = vertices();
+            Graph hex_board(vector<vector<float>> (board_nodes, vector<float>(board_nodes, 0.0)));
+            for (int node = 0; node < board_nodes; node++ ){
+                switch (nodeType(node)){
+                case 0: //top-right corner
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node + size);
+                    break;
+                case 1: //top boundary
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node + size - 1);
+                    addSetEdgeValue(node, node + size);
+                    break;
+                case 2://top-left corner
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node + size);
+                    addSetEdgeValue(node, node + size - 1);
+                    break;
+                case 3: //left boundary
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node + size - 1);
+                    addSetEdgeValue(node, node + size);
+                    addSetEdgeValue(node, node - size);
+                    break;
+                case 4://bottom-left corner
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node - size);
+                    break;
+                case 5: //bottom boundary
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node - size + 1);
+                    addSetEdgeValue(node, node - size);
+                    break;
+                case 6://bottom-right corner
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node - size);
+                    addSetEdgeValue(node, node - size + 1);
+                    break;
+                case 7: //right boundary
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node - size + 1);
+                    addSetEdgeValue(node, node + size);
+                    addSetEdgeValue(node, node - size);
+                    break;
+                case 8: //middle
+                    addSetEdgeValue(node, node - 1);
+                    addSetEdgeValue(node, node + 1);
+                    addSetEdgeValue(node, node + size);
+                    addSetEdgeValue(node, node - size);
+                    addSetEdgeValue(node, node - size + 1);
+                    addSetEdgeValue(node, node + size - 1);
+                    break;  
+                default:
+                    break;
+                }
+            }
+        }
+
+        /*Plays a movement and returns an integer depending whether the movement is legal or not
+        Assigns a float to the adjacency matrix 1.0 for player 1 and 2.0 for player 2, 0.0 is the default unplayed value*/
+        int playMovement(string player, tuple<int, int> & movement, bool print_board = true){
+                int row = get<0>(movement), column = get<1>(movement);
+                assert(player == "player 1" ||player == "player 2");
+                assert(row >= 0 && row < size);
+                assert(column >= 0 && column < size);
+                int node = (size * row) + column;
+
+                if (getNodeValue(node) == 0.0){
+                    if (player == "player 1"){setNodeValue(node, 1.0);}
+                    if (player == "player 2"){setNodeValue(node, 2.0);}
+                    if (print_board){
+                        cout<< player + " did a movement at position ("<< row<<", "<<column <<")\n";
+                        printHexBoard();
+                    }
+                    return 0;
+                }
+                cout<<"Invalid movement, choose another one.\n";
+                return 1;
+            }
+        void DFSColor(int source, float color){
+            int row, column;
+            assert(source >=0 && source < vertices());
+            DFS_labels[source] = true;
+            vector<int> neighbors =neighborsColor(source, color);
+            // cout <<neighbors<<endl;
+            for(const auto & neighbor : neighbors){if (!DFS_labels[neighbor]){DFSColor(neighbor, color);} //Do DFS recursively
+            }
+        }
+
+        string winnerChecker(){
+            string players[2] = {"player 1", "player 2"};
+            float colors[2] = {1.0, 2.0};
+
+            
+            for(int source = 0; source < size; source ++){
+                if (getNodeValue(source) != 1.0){continue;}
+                resetDFSLabels();
+                DFSColor(source, 1.0);
+                // cout<<DFS_labels;
+                for (int k = 0; k < size; k++){
+                    if (DFS_labels[ size*(size-1) + k ]){
+                        return "player 1";
+                    }
+                }
+            }
+            for(int k = 0, source = 0; k < size; k ++){
+                source = k*size;
+                if (getNodeValue(source) != 2.0){continue;}
+                resetDFSLabels();
+                DFSColor(source, 2.0);
+                // cout<<DFS_labels;
+                for (int k = 1; k <= size; k++){
+                    if (DFS_labels[ k*size - 1]){
+                        return "player 2";
+                    }
+                }
+            }
+            return "no winner yet";
+        }
+
+};
+
+// const vector<string> node_assignations ={"top-right corner","top boundary", "top-left corner",
+//                 "left boundary", "bottom-left corner", "bottom boundary",
+//                 "bottom-right corner", "right boundary", "middle"};
+
+                // row = neighbor/size, column = neighbor % size;
+                // cout<<"col"<<column<<"row"<<row<<endl;
+                // if (column == size - 1 && color == 1.0){
+                //     resetDFSLabels();
+                //     printf("ffff");
+                //     return true;
+                // } //Blue goes from left to right
+                // if (row == size - 1 && color == 2.0){
+                //     resetDFSLabels();
+                //     return true;
+                // } //Red goes from top to bottom
 
 int main(){
-    int size = 7;
-    
-    Graph hex_board =  initializeHexBoard(size);
-    // for (int i = 0; i< size * size; i++ ){ 
-    //     cout<<"node "<<i <<" type: "<< node_assignations[nodeType(i, size)]<< endl;}
-    int node = 12;
-    vector<int> v = hex_board.neighbors(node);
-    cout<<v<<endl<< 5*node_assignations[nodeType(node, size)]<<nodeType(node, size)<< endl<< endl;
-    hex_board.setNodeValue(1, 1.0);
-    hex_board.setNodeValue(14, 2.0);
-    printHexBoard(hex_board);
+    int size = 5 ;
+    HexBoard hex_board =  HexBoard(size);
+    hex_board.initializeHexBoard();
+    cout<< "Example Hex board, each non hexagonal character represents each player's move.\nPlayer 1 symbol: " + player_1_symbol + " Player 2 symbol: " + player_2_symbol + "\nOriginal board:\n";
+    hex_board.printHexBoard();
+    cout<<"Example movements:\n";
+    auto movement = make_tuple(1,4); //Pair row column
+    hex_board.playMovement((string)"player 1", movement, false);
+    movement = make_tuple(3,2);
+    hex_board.playMovement((string)"player 2", movement, false);
+    movement = make_tuple(3,1);
+    hex_board.playMovement((string)"player 2", movement, false);
+    movement = make_tuple(3,3);
+    hex_board.playMovement((string)"player 2", movement, false);
+    movement = make_tuple(3,0);
+    hex_board.playMovement((string)"player 2", movement, false);
+    movement = make_tuple(0,4);
+    hex_board.playMovement((string)"player 1", movement, false);
+    movement = make_tuple(2,3);
+    hex_board.playMovement((string)"player 1", movement, false);
+    movement = make_tuple(4,3);
+    hex_board.playMovement((string)"player 1", movement, false);
+    movement = make_tuple(3,4);
+    hex_board.playMovement((string)"player 1", movement);
+
+    // cout<<"neigh"<<(bool)hex_board.DFSColor(3*size+1, 1.0)<<endl;
+    cout<<(string)hex_board.winnerChecker();
     return 0;
 }
