@@ -309,22 +309,6 @@ class HexBoard : public Graph{
 
 };
 
-// const vector<string> node_assignations ={"top-right corner","top boundary", "top-left corner",
-//                 "left boundary", "bottom-left corner", "bottom boundary",
-//                 "bottom-right corner", "right boundary", "middle"};
-
-                // row = neighbor/size, column = neighbor % size;
-                // cout<<"col"<<column<<"row"<<row<<endl;
-                // if (column == size - 1 && color == 1.0){
-                //     resetDFSLabels();
-                //     printf("ffff");
-                //     return true;
-                // } //Blue goes from left to right
-                // if (row == size - 1 && color == 2.0){
-                //     resetDFSLabels();
-                //     return true;
-                // } //Red goes from top to bottom
-
 int main(){
     int size = 5 ;
     HexBoard hex_board =  HexBoard(size);
