@@ -32,12 +32,12 @@ string operator*(const int repetitionCount, const string& str) {
 //Implements the graph class declared using and adjacency matrix and its basic operations. Also it has a vector storing the node values
 class Graph{
 protected:
-    vector<vector<float>> adjacency_matrix;
-    vector<float> node_values;
+    vector<vector<double>> adjacency_matrix;
+    vector<double> node_values;
 
 public:
-    Graph(vector<vector<float>> adjacency_matrix ) 
-    : adjacency_matrix(adjacency_matrix), node_values(vector<float>(adjacency_matrix.size(), 0.0)){}
+    Graph(vector<vector<double>> adjacency_matrix ) 
+    : adjacency_matrix(adjacency_matrix), node_values(vector<double>(adjacency_matrix.size(), 0.0)){}
     
     inline int vertices() {
         return adjacency_matrix.size();}
@@ -52,7 +52,7 @@ public:
         return n_edges;
     }
 
-    vector<vector<float>> adjacencyMatrix() {
+    vector<vector<double>> adjacencyMatrix() {
         return adjacency_matrix;}
     
     inline bool adjacent(int u, int v){
@@ -69,33 +69,29 @@ public:
         return neighbors_vector;
     }
     
-    inline void setNodeValue(int u, float value){
+    inline void setNodeValue(int u, double value){
         assert(u < vertices() && u >= 0);
         node_values[u] = value;}
 
-    inline float getNodeValue(int u){
+    inline double getNodeValue(int u){
         assert(u < vertices() && u >= 0);
         return node_values[u];}
     
-    inline void addSetEdgeValue(int u, int v, float value = 1.0){
+    inline void addSetEdgeValue(int u, int v, double value = 1.0){
         assert(u < vertices() && v < vertices() && u>= 0 && v >= 0);
         adjacency_matrix[u][v] = value;}
     
-    inline void addSetUndirectedEdgeValue(int u, int v, float value = 1.0){
+    inline void addSetUndirectedEdgeValue(int u, int v, double value = 1.0){
         addSetEdgeValue(u, v, value );
         addSetEdgeValue(v, u, value );}
     
-    inline float getEdgeValue(int u, int v){
+    inline double getEdgeValue(int u, int v){
         assert(u < vertices() && v < vertices() && u>= 0 && v >= 0);
         return adjacency_matrix[u][v];}
     
     inline void addDeleteEdge(int u, int v){
         addSetEdgeValue(u, v, 0.0);}
     
-    //For Dijkstra's algorithm
-    void initializeNodes(int start){
-        node_values = vector<float>( vertices(), INFINITY );
-        node_values[start] = 0.0;}
 };
 
 //HexBoard class, a subclass of Graph
@@ -105,7 +101,7 @@ class HexBoard : public Graph{
         vector<bool> DFS_labels;
     public:
         HexBoard(int size): 
-            Graph(vector<vector<float>> (size * size, vector<float>(size * size, 0.0))), size(size), DFS_labels(vector<bool>( size * size , false)) {}
+            Graph(vector<vector<double>> (size * size, vector<double>(size * size, 0.0))), size(size), DFS_labels(vector<bool>( size * size , false)) {}
 
         inline void resetDFSLabels(){
             DFS_labels = vector<bool>( size * size , false);}
@@ -140,7 +136,7 @@ class HexBoard : public Graph{
             cout<<endl;
         }
 
-        vector<int> neighborsColor(int u, float color){
+        vector<int> neighborsColor(int u, double color){
             assert(u < vertices() && (color == 1.0 || color == 2.0));
             vector<int> neighbors_vector;
             for (int j = 0; j < vertices(); j++){
@@ -186,7 +182,7 @@ class HexBoard : public Graph{
 
         void initializeHexBoard(){
             int board_nodes = vertices();
-            Graph hex_board(vector<vector<float>> (board_nodes, vector<float>(board_nodes, 0.0)));
+            Graph hex_board(vector<vector<double>> (board_nodes, vector<double>(board_nodes, 0.0)));
             for (int node = 0; node < board_nodes; node++ ){
                 switch (nodeType(node)){
                 case 0: //top-right corner
@@ -246,7 +242,7 @@ class HexBoard : public Graph{
         }
 
         /*Plays a movement and returns an integer depending whether the movement is legal or not
-        Assigns a float to the adjacency matrix 1.0 for player 1 and 2.0 for player 2, 0.0 is the default unplayed value*/
+        Assigns a double to the adjacency matrix 1.0 for player 1 and 2.0 for player 2, 0.0 is the default unplayed value*/
         int playMovement(string player, tuple<int, int> & movement, bool print_board = true){
                 int row = get<0>(movement), column = get<1>(movement);
                 assert(player == "player 1" ||player == "player 2");
@@ -266,7 +262,7 @@ class HexBoard : public Graph{
                 cout<<"Invalid movement, choose another one.\n";
                 return 1;
             }
-        void DFSColor(int source, float color){
+        void DFSColor(int source, double color){
             int row, column;
             assert(source >=0 && source < vertices());
             DFS_labels[source] = true;
@@ -276,11 +272,7 @@ class HexBoard : public Graph{
             }
         }
 
-        string winnerChecker(){
-            string players[2] = {"player 1", "player 2"};
-            float colors[2] = {1.0, 2.0};
-
-            
+        string winnerChecker(){           
             for(int source = 0; source < size; source ++){
                 if (getNodeValue(source) != 1.0){continue;}
                 resetDFSLabels();
