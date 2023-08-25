@@ -6,14 +6,16 @@
 #include <iomanip>
 #include <cmath>
 #include <tuple>
+#include <algorithm>
 using namespace std;
 
 //Symbols for players
-string red_player_symbol = "\u2716", blue_player_symbol = "\u25CF", not_played = "\u2B21"; //(1) RED == cross, BLUE == circle, not_played == Hexagon
+// string red_player_symbol = "\u2716", blue_player_symbol = "\u25CF", not_played_symbol = "\u2B21"; //(1) RED == cross, BLUE == circle, NOT_PLAYED == Hexagon
+string red_player_symbol = "x", blue_player_symbol = "o", not_played_symbol = "*";
 
 //Template for printing vectors
 template<typename T>
-ostream& operator<<(ostream &os, vector<T>  & vec){
+ostream& operator<<(ostream &os, vector<T> &vec){
     int k = 0;
     for (const auto & element : vec){
         cout<< setprecision(4) << setfill(' ') << setw(6) << element<< ", ";
@@ -22,17 +24,23 @@ ostream& operator<<(ostream &os, vector<T>  & vec){
     cout<< endl;
     return os;
 }
+
+template<typename T>
+int argmax(const vector<T> & vec) {
+    if (vec.empty()) {throw invalid_argument("Vector is empty"); }
+    return static_cast<int> (distance(vec.begin(), max_element(vec.begin(), vec.end())));
+}
 //Overloading * operator for strings
-string operator*(const int repetitionCount, const string& str) {
+string operator*(const int repetitionCount, const string &str) {
     string result;
     for (int i = 0; i < repetitionCount; ++i) {result += str;}
     return result;
 }
 
 //Defines Player enumeration to tell who has played which movement
-enum Player{NO_WINNER= -1, NOT_PlAYED = 0, RED = 1, BLUE = 2};
+enum Player{NO_WINNER= -1, NOT_PLAYED = 0, RED = 1, BLUE = 2};
 
-ostream& operator<<(ostream &os, const Player  & player){
+ostream& operator<<(ostream &os, const Player &player){
     switch (player){
         case RED:
             cout<<"Red player";
@@ -61,7 +69,7 @@ class HexBoard {
         HexBoard(int size): 
             size(size), 
             adjacency_matrix(vector<vector<int>>(size*size, vector<int>(size*size, 0))),
-            node_values(vector<Player>(adjacency_matrix.size(), NOT_PlAYED)), 
+            node_values(vector<Player>(adjacency_matrix.size(), NOT_PLAYED)), 
             nodes_to_play(vector<int>(adjacency_matrix.size(), 0)),
             DFS_labels(vector<bool>( size*size , false)) {
                 initializeHexBoard();
@@ -95,14 +103,16 @@ class HexBoard {
         inline void resetDFSLabels(){
             DFS_labels = vector<bool>( size*size , false);}
 
-        // inline int deleteNodeToPlay(int node){
-        //     auto index = find(nodes_to_play.begin(), nodes_to_play.end(), node);
-        //     if (index != nodes_to_play.end()){
-        //         nodes_to_play.erase(index);
-        //         return 0;
-        //     }
-        //     return 1;
-        // }
+        inline int deleteNodeToPlay(int node){
+            
+            auto index = find(nodes_to_play.begin(), nodes_to_play.end(), node);
+            if (index != nodes_to_play.end()){
+                nodes_to_play.erase(index);
+                return 0;
+            }
+            cout<< "Unsuccesful deletion\n";
+            return 1;
+        }
 
         /*Classifies each node (hexagon) in a Hex board according to its location
         The list is for printing purposes:
@@ -205,11 +215,11 @@ class HexBoard {
 
             string base_edge_line ="\\ / " , node_link = " — ", node_line = ""; //(2)
             string edge_line =(string)" " + (size - 1) * base_edge_line + "\\";
-
+            node_link = " - ";
             for (int node = 0; node < vertices(); node++ ){
                 if (getNodeValue(node) == RED){node_line += red_player_symbol;}//Player 1 played on that node
                 else if (getNodeValue(node) == BLUE){node_line += blue_player_symbol;}//Player 2 played on that node
-                else {node_line += not_played;}//No one has played on that node
+                else {node_line += not_played_symbol;}//No one has played on that node
 
                 if ( (node % size) == size - 1){
                     //Print lines
@@ -236,20 +246,14 @@ class HexBoard {
             return neighbors_vector;
         }
 
-        /*Plays a movement and returns an integer depending whether the movement is legal or not
-        Assigns an int to the node_values RED for player 1 and BLUE for player 2, NOT_PlAYED is the default unplayed value*/
-        int playMovement(Player player, tuple<int, int> & movement, bool print_board = true){
-                int row = get<0>(movement), column = get<1>(movement);
-                assert(player == RED ||player == BLUE);
-                assert(row >= 0 && row < size);
-                assert(column >= 0 && column < size);
-                int node = (size * row) + column;
-
-                if (getNodeValue(node) == NOT_PlAYED){
+        int executeMovement(Player player, int node, bool print_board = true){
+                assert(player == RED || player == BLUE);
+                if (getNodeValue(node) == NOT_PLAYED){
                     if (player == RED){setNodeValue(node, RED);}
                     if (player == BLUE){setNodeValue(node, BLUE);}
-                    // deleteNodeToPlay(node);
+                    deleteNodeToPlay(node);
                     if (print_board){
+                        int row = node/size, column = node % size;
                         cout<< player << " did a movement at position ("<< row<<", "<<column <<")\n";
                         printHexBoard();
                     }
@@ -257,7 +261,22 @@ class HexBoard {
                 }
                 cout<<"Invalid movement, choose another one.\n";
                 return 1;
+        }
+
+        /*Plays a movement and returns an integer depending whether the movement is legal or not
+        Assigns an int to the node_values RED for player 1 and BLUE for player 2, NOT_PLAYED is the default unplayed value*/
+        int playMovement(Player player, tuple<int, int> & movement, bool print_board = true){
+                int row = get<0>(movement), column = get<1>(movement);
+                assert(row >= 0 && row < size);
+                assert(column >= 0 && column < size);
+                int node = (size * row) + column;
+                return executeMovement(player, node, print_board);
             }
+        
+        int playMovement(Player player, int movement, bool print_board = true){
+            assert(movement < size*size);
+            return executeMovement(player, movement, print_board);
+        }
 
         void DFSColor(int source, Player color){
             int row, column;
@@ -296,13 +315,11 @@ class HexBoard {
             }
             return NO_WINNER;
         }
-
-    
 };
 
 class AIPlayer{
     public:
-        const Player color;
+        Player color;
         int n_attempts_per_move;
 
         AIPlayer(Player color, int n_attempts_per_move = 100) : 
@@ -310,49 +327,93 @@ class AIPlayer{
         n_attempts_per_move(n_attempts_per_move)
         {}
 
-        // int nextMovement(HexBoard current_hex_board){
-        //     HexBoard test_board;
-        //     for ( auto & node_to_play : current_hex_board.getNodesToPlay()){
-        //         test_board = current_hex_board;
-        //         for(int attempt = 0; attempt < n_attempts_per_move; attempt){
-        //             FillBoard(test_board);
-        //             test_board.
-        //         }
+        void fillBoard(HexBoard & board){
+            vector<int> nodes_to_play = board.getNodesToPlay();
+            bool your_turn = true;
+            Player other_player;
+            static random_device rd;
+            static mt19937 gen(rd());
 
-        // }
-        // return 0
-        // }
+            if (color == RED){other_player = BLUE;}
+            else {other_player = RED;}
+
+            // Shuffle the vector
+            shuffle(nodes_to_play.begin(), nodes_to_play.end(), gen);
+            for ( auto movement : nodes_to_play){
+                
+                if (your_turn){ 
+                    cout<<movement<<" player "<< color<<endl;
+                    board.playMovement(color, movement, false);
+                    your_turn = false;}
+                else{
+                    cout<<movement<<" player "<< other_player<<endl;
+                    board.playMovement(other_player, movement, false);
+                    your_turn = true;
+                }
+            }
+            assert(board.getNodesToPlay().size() == 0);
+        }
+
+        int nextMovement(HexBoard current_hex_board){
+            HexBoard test_board = current_hex_board;
+            Player winner;
+            vector<int> nodes_to_play = current_hex_board.getNodesToPlay();
+            vector<int> counts(nodes_to_play.size(), 0);
+            for (int i = 0; i < counts.size() ; i++ ){
+                test_board = current_hex_board;
+                for(int attempt = 0; attempt < n_attempts_per_move; attempt++){
+                    fillBoard(test_board);
+                    winner = test_board.winnerChecker();
+                    if (winner == color){counts[i] += 1;}
+                }
+            }
+        return nodes_to_play[argmax(counts)];
+        }
 
 };
+
+
 
 int main(){
     int size = 5 ;
     HexBoard hex_board =  HexBoard(size);
     hex_board.initializeHexBoard();
-    cout<< "Example Hex board, each non hexagonal character represents each player's move.\n Player 1 symbol: " + red_player_symbol 
-    + " Player 2 symbol: " + blue_player_symbol + " Non played symbol: " + not_played + "\nOriginal board:\n\n";
+    cout<< "Example Hex board, each non hexagonal character represents each player's move.\n Red player symbol: " + red_player_symbol 
+    + " Blue player symbol: " + blue_player_symbol + " Non played symbol: " + not_played_symbol + "\nOriginal board:\n\n";
     hex_board.printHexBoard();
     cout<<"Example movements:\n";
     auto movement = make_tuple(1,4); //Pair row column
     hex_board.playMovement(RED, movement, false);
     movement = make_tuple(3,2);
     hex_board.playMovement(BLUE, movement, false);
+    movement = make_tuple(3,4);
+    hex_board.playMovement(RED, movement, false);
+    
+
     movement = make_tuple(3,1);
     hex_board.playMovement(BLUE, movement, false);
-    movement = make_tuple(3,3);
-    hex_board.playMovement(BLUE, movement, false);
-    movement = make_tuple(3,0);
-    hex_board.playMovement(BLUE, movement, false);
-    movement = make_tuple(0,4);
-    hex_board.playMovement(RED, movement, false);
-    movement = make_tuple(2,3);
-    hex_board.playMovement(RED, movement, false);
     movement = make_tuple(4,3);
     hex_board.playMovement(RED, movement, false);
-    movement = make_tuple(3,4);
-    hex_board.playMovement(RED, movement);
+    movement = make_tuple(3,3);
+    hex_board.playMovement(BLUE, movement, false);
+    movement = make_tuple(2,3);
+    hex_board.playMovement(RED, movement, false);
+    movement = make_tuple(3,0);
+    hex_board.playMovement(BLUE, 3*5+0, true);
+    // movement = make_tuple(0,4);
+    // hex_board.playMovement(RED, movement, false);
+    
+    
+    
+    
+    
+    AIPlayer red_machine = AIPlayer(RED, 100);
+    red_machine.fillBoard(hex_board);
+    vector<int> neg = hex_board.getNodesToPlay();
 
-    // cout<<"neigh"<<(bool)hex_board.DFSColor(3*size+1, 1.0)<<endl;
+    cout<<"neigh"<< neg<<endl;
+    hex_board.printHexBoard();
     cout<<hex_board.winnerChecker();
+
     return 0;
 }
