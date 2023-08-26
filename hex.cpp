@@ -7,10 +7,8 @@
 #include <cmath>
 #include <tuple>
 #include <algorithm>
-#include<windows.h>
-#include<unistd.h> 
-#include <fcntl.h>
-#include <io.h>
+#include <windows.h>
+#include <unistd.h> 
 using namespace std;
 
 
@@ -528,7 +526,7 @@ int main(){
     "-Red player's symbol: " + red_player_symbol + "\n" +
     "-Blue player's symbol: " + blue_player_symbol + "\n" +
     "-Non played's symbol: " + not_played_symbol + " Please go to lines 16 and 17 before executing the code!!!!\n"
-    "-The players insert as requested the movements as pairs (x,y), the board has a layout to indicate the position to play."
+    "-The players insert as requested the movements as pairs (x,y), the board has a layout to indicate the position to play. "
     "Here there is an empty board example, x goes from top to bottom y goes from left to right.\n\n";
     HexBoard(4).printHexBoard();
 
@@ -544,7 +542,7 @@ int main(){
 
     switch (game_mode){
     case 1:
-        cout<< "Now you will play a game against an AI opponent."
+        cout<< "Now, you will play a game against an AI opponent. "
         "The variable 'size' considers the hex board size, wheras the 'n_attempts' variable sets up the number of game realizations per movement the AI is allowed to do.\n";
         printf("We set up the size as a borad of %d x %d, and the number of attempts as %d. You can choose your color.\n\n", size, size, n_attempts); 
         playGameVsAI(size, n_attempts);
