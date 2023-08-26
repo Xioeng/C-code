@@ -7,14 +7,17 @@
 #include <cmath>
 #include <tuple>
 #include <algorithm>
-#include <chrono>  
-#include <thread>
+#include<windows.h>
+#include<unistd.h> 
+#include <fcntl.h>
+#include <io.h>
 using namespace std;
+
 
 //Symbols for players
 
-string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "\u2B21", node_link = " \u2014 "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Linux users uncomment this line!
-// string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "*", node_link = " - "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Windows users uncomment this line!
+// string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "\u2B21", node_link = " \u2014 "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Linux users uncomment this line!
+string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "*", node_link = " - "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Windows users uncomment this line!
 
 //Template for printing vectors
 template<typename T>
@@ -228,7 +231,7 @@ class HexBoard {
 
             string base_edge_line ="\\ / " , node_line = "0 "; //(2)
             string edge_line =(string)"   " + (size - 1) * base_edge_line + "\\";
-            string header_line = "x|y\u2192\n\u2198\\";
+            string header_line = "x|y>\nv\\";
             for(int j = 0; j < size; j++){ header_line = header_line + to_string(j) +"   ";}
             cout<<header_line<<endl;
             for (int node = 0; node < vertices(); node++ ){
@@ -261,20 +264,20 @@ class HexBoard {
         }
 
         int executeMovement(Player player, int node, bool print_board = true){//Executes the player's movement in a given node, also it has the option to print the board
-                assert(player == RED || player == BLUE);
-                if (getNodeValue(node) == NOT_PLAYED){
-                    if (player == RED){setNodeValue(node, RED);}
-                    if (player == BLUE){setNodeValue(node, BLUE);}
-                    deleteNodeToPlay(node);
-                    if (print_board){
-                        int row = node/size, column = node % size;
-                        cout<< player << " did a movement at position ("<< row<<", "<<column <<")\n";
-                        printHexBoard();
-                    }
-                    return 0;
-                }
-                cout<<"Invalid movement, choose another one.\n";
-                return 1;
+            assert(player == RED || player == BLUE);
+            if (getNodeValue(node) != NOT_PLAYED){
+                cout<<"Node played already, choose another one.\n";
+                return 1;}
+
+            if (player == RED){setNodeValue(node, RED);}
+            if (player == BLUE){setNodeValue(node, BLUE);}
+            deleteNodeToPlay(node);
+            if (print_board){
+                int row = node/size, column = node % size;
+                cout<< player << " did a movement at position ("<< row<<", "<<column <<")\n";
+                printHexBoard();
+            }
+            return 0;
         }
 
         /*Plays a movement and returns an integer depending whether the movement is legal or not
@@ -282,14 +285,20 @@ class HexBoard {
         //Here the movement is given as a tuple
         int playMovement(Player player, tuple<int, int> & movement, bool print_board = true){
                 int row = get<0>(movement), column = get<1>(movement);
-                assert(row >= 0 && row < size);
-                assert(column >= 0 && column < size);
+                if ( row < 0 || row >= size || column < 0 || column >= size ){
+                    cout<<"Node value outside boundaries, choose another one.\n";
+                    return 1;
+                }
                 int node = (size * row) + column;
                 return executeMovement(player, node, print_board);
-            }
-        //Here the function is overloaded and movement is given as an 0<integer< size*size
+        }
+
+        //Here the function is overloaded and movement is given as an 0<movement< size*size integer
         int playMovement(Player player, int movement, bool print_board = true){
-            assert(movement < size*size);
+            if (movement < 0 || movement >= size*size){
+                cout<<"Node value outside boundaries, choose another one.\n";
+                return 1;
+            }
             return executeMovement(player, movement, print_board);
         }
         
@@ -299,8 +308,8 @@ class HexBoard {
             assert(source >=0 && source < vertices());
             DFS_labels[source] = true;
             vector<int> neighbors = neighborsColor(source, color);
-            // cout <<neighbors<<endl;
-            for(const auto & neighbor : neighbors){if (!DFS_labels[neighbor]){DFSColor(neighbor, color);} //Do DFS recursively
+            for(const auto & neighbor : neighbors){
+                if (!DFS_labels[neighbor]){DFSColor(neighbor, color);} //Do DFS recursively
             }
         }
 
@@ -308,7 +317,7 @@ class HexBoard {
         Player winnerChecker(){           
             //Checks if RED won
             for(int source = 0; source < size; source ++){
-                if (getNodeValue(source) != RED){continue;}
+                if (getNodeValue(source) != RED){continue;}//It's not necessary to do DFS
                 resetDFSLabels();
                 DFSColor(source, RED);
                 for (int k = 0; k < size; k++){
@@ -320,7 +329,7 @@ class HexBoard {
             //Checks if BLUE won
             for(int k = 0, source = 0; k < size; k ++){
                 source = k*size;
-                if (getNodeValue(source) != BLUE){continue;}
+                if (getNodeValue(source) != BLUE){continue;} //It's not necessary to do DFS
                 resetDFSLabels();
                 DFSColor(source, BLUE);
                 for (int k = 1; k <= size; k++){
@@ -402,7 +411,7 @@ class AIPlayer{
 };
 
 //Plays the Hex game Human vs. AI, the human player can choose their color
-void playGame(int size, int n_attempts){
+void playGameVsAI(int size, int n_attempts){
     int color = -1;
     Player player_color, AI_color;
     bool player_turn;
@@ -411,7 +420,6 @@ void playGame(int size, int n_attempts){
         cout<< "Select your color. 1 for Red 2 for Blue:\n";
         cin>> color;        
     }
-    
     if (color == 1){
         player_color = RED;
         AI_color = BLUE;
@@ -432,8 +440,8 @@ void playGame(int size, int n_attempts){
     while (board.winnerChecker() == NO_WINNER){
         if (player_turn){
             player_flag = 1;
+            cout<<"Your turn!!\n";
             while (player_flag == 1){
-                cout<<"Your turn!!\n";
                 cout<< "Select x coordinate:"; cin>> x; 
                 cout<< "Select y coordinate:"; cin>> y; 
                 player_movement = make_tuple(x,y);
@@ -448,9 +456,38 @@ void playGame(int size, int n_attempts){
             player_turn = true;
         }
     }
-    cout << "Player "<< (Player)board.winnerChecker()<< " has won!";
+    cout << (Player)board.winnerChecker()<< " has won!";
 }
 
+void playGameHumanVsHuman(){
+    int game_size = -1;
+    cout<< "Human vs Human game!!!\nPlease select game's size: ";
+    cin >> game_size;
+    while (game_size < 1){
+        cout << "Select a valid size: ";
+        cin >> game_size;
+    }
+
+    HexBoard board = HexBoard(game_size);
+    int player_turn = 0, x, y, player_flag;
+    tuple<int, int> player_movement;
+    Player current_player;
+    while (board.winnerChecker() == NO_WINNER){
+        player_flag = 1;
+        if(player_turn % 2 == 0){current_player = RED;}
+        else{current_player = BLUE;}
+        cout<< current_player <<"'s turn!!\n";
+        while (player_flag == 1){
+            cout<< "Select x coordinate:"; cin>> x; 
+            cout<< "Select y coordinate:"; cin>> y;
+            player_movement = make_tuple(x,y);
+            player_flag = board.playMovement(current_player, player_movement);
+        }
+        player_turn++;
+    }
+    cout << (Player)board.winnerChecker()<< " has won!";
+}
+    
 //Shows and example of the hex grid and its execution. Only for illustration purposes
 void showExample(){
     HexBoard hex_board =  HexBoard(3);
@@ -461,42 +498,56 @@ void showExample(){
     cout<<"\n\nHere is an example of a small board with some movements step by step:\n";
     auto movement = make_tuple(1,2); //Pair row column
     hex_board.playMovement(RED, movement);
-    this_thread::sleep_for(chrono::seconds(secondsToSleep));
+    sleep(secondsToSleep);
     movement = make_tuple(0,2);
     hex_board.playMovement(BLUE, movement);
-    this_thread::sleep_for(chrono::seconds(secondsToSleep));
+    sleep(secondsToSleep);
     movement = make_tuple(2,2);
     hex_board.playMovement(RED, movement);
-    this_thread::sleep_for(chrono::seconds(secondsToSleep));
+    sleep(secondsToSleep);
     movement = make_tuple(2,0);
     hex_board.playMovement(BLUE, movement);
-    this_thread::sleep_for(chrono::seconds(secondsToSleep));
+    sleep(secondsToSleep);
     movement = make_tuple(0,0);
     hex_board.playMovement(RED, movement );
-    this_thread::sleep_for(chrono::seconds(secondsToSleep));
+    sleep(secondsToSleep);
     movement = make_tuple(1,1);
     hex_board.playMovement(BLUE, movement );
     cout<<hex_board.winnerChecker()<<" has won!"<<"\n\n\n\n";
 }
 
 int main(){
-    int example = 0 ;
-    cout<< "\nThis is a prototype of an implementation of an Hex game board. There are two players: Blue and Red.\n"
-    "The game's objective is to form a continuous path from one side to another: Red has to connect top and bottom sides, Blue connects left and right sides.\n"
-    "By general rule Red starts first.\n"
-    "We use some icons to represent each player or a position not used yet\nRed player's symbol: " + red_player_symbol 
-    + " Blue player's symbol: " + blue_player_symbol + " Non played's symbol: " + not_played_symbol + ". Please go to lines 16 and 17 before executing the code!!!!.\n"
-    "The players insert as requested the movements as pairs (x,y), the board has a layout to indicate the position to play. Here there is a board example:\n";
+    
+    int example = 0, game_mode = 0 ;
+    cout<< "\nThis is a prototype of an implementation of an Hex game board.\n"
+    "-In this game there are two players: Blue and Red.\n"
+    "-The game's objective is to form a continuous path from one side to another:\n "
+    "Red has to connect top and bottom sides, Blue connects left and right sides.\n"
+    "-By general rule Red starts first.\n\n"
+    "We use some icons to represent each player or a position not used yet\n"
+    "-Red player's symbol: " + red_player_symbol + "\n" +
+    "-Blue player's symbol: " + blue_player_symbol + "\n" +
+    "-Non played's symbol: " + not_played_symbol + " Please go to lines 16 and 17 before executing the code!!!!\n"
+    "-The players insert as requested the movements as pairs (x,y), the board has a layout to indicate the position to play."
+    "Here there is an empty board example, x goes from top to bottom y goes from left to right.\n\n";
     HexBoard(4).printHexBoard();
 
-    cout<< "Do you want to see an example? (1 for yes otherwise for no)\n"; cin>> example;
+    cout<< "Do you want to see an example? (type 1 for yes, type any other key for no) "; 
+    cin>> example;
     if (example == 1){showExample();}
         
     int size = 7, n_attempts = 500; //If you want to play in an 11x11 board select 1000 attempts
-    cout<< "Now you will play a game against an AI opponent."
-    "The variable 'size' considers the hex board size, wheras the 'n_attempts' variable sets up the number of game realizations per movement the AI is allowed to do.\n";
-    printf("We set up the size as a borad of %d x %d, and the number of attempts as %d. You can choose your color.\n\n", size, size, n_attempts); 
-    playGame(size, n_attempts);
-
+    
+    cout<<"Do you want to play against an AI opponent (type 1) or against another human player (type 2)? "
+          "If not, type any other key to quit: ";
+    cin>> game_mode;
+    if (game_mode == 1){
+        cout<< "Now you will play a game against an AI opponent."
+        "The variable 'size' considers the hex board size, wheras the 'n_attempts' variable sets up the number of game realizations per movement the AI is allowed to do.\n";
+        printf("We set up the size as a borad of %d x %d, and the number of attempts as %d. You can choose your color.\n\n", size, size, n_attempts); 
+        playGameVsAI(size, n_attempts);
+    }
+    else if (game_mode == 2){playGameHumanVsHuman();}
+    else {cout<< "Quitting\n";}
     return 0;
 }
