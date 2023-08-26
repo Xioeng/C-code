@@ -536,18 +536,26 @@ int main(){
     cin>> example;
     if (example == 1){showExample();}
         
-    int size = 7, n_attempts = 500; //If you want to play in an 11x11 board select 1000 attempts
+    int size = 5, n_attempts = 1000; //If you want to play in an 11x11 board select 1000 attempts
     
     cout<<"Do you want to play against an AI opponent (type 1) or against another human player (type 2)? "
           "If not, type any other key to quit: ";
     cin>> game_mode;
-    if (game_mode == 1){
+
+    switch (game_mode){
+    case 1:
         cout<< "Now you will play a game against an AI opponent."
         "The variable 'size' considers the hex board size, wheras the 'n_attempts' variable sets up the number of game realizations per movement the AI is allowed to do.\n";
         printf("We set up the size as a borad of %d x %d, and the number of attempts as %d. You can choose your color.\n\n", size, size, n_attempts); 
         playGameVsAI(size, n_attempts);
+        break;
+    case 2:
+        playGameHumanVsHuman();
+    default:
+        cout<< "Quitting\n";
+        break;
     }
-    else if (game_mode == 2){playGameHumanVsHuman();}
-    else {cout<< "Quitting\n";}
+    int _;
+    cout<<"\nType anything to quit "; cin>> _;
     return 0;
-}
+    }
