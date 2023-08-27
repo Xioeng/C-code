@@ -14,8 +14,7 @@ using namespace std;
 
 //Symbols for players
 
-// string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "\u2B21", node_link = " \u2014 "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Linux users uncomment this line!
-string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "*", node_link = " - "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon. Windows users uncomment this line!
+string red_player_symbol = "R", blue_player_symbol = "B", not_played_symbol = "\u2B21", node_link = " \u2014 "; //(1) RED == R, BLUE == B, NOT_PLAYED == Hexagon
 
 //Template for printing vectors
 template<typename T>
@@ -229,7 +228,7 @@ class HexBoard {
 
             string base_edge_line ="\\ / " , node_line = "0 "; //(2)
             string edge_line =(string)"   " + (size - 1) * base_edge_line + "\\";
-            string header_line = "x|y>\nv\\";
+            string header_line = "x|y\u2192\n\u2198\\";
             for(int j = 0; j < size; j++){ header_line = header_line + to_string(j) +"   ";}
             cout<<header_line<<endl;
             for (int node = 0; node < vertices(); node++ ){
@@ -515,7 +514,7 @@ void showExample(){
 }
 
 int main(){
-    
+    SetConsoleOutputCP(CP_UTF8);
     int example = 0, game_mode = 0 ;
     cout<< "\nThis is a prototype of an implementation of an Hex game board.\n"
     "-In this game there are two players: Blue and Red.\n"
